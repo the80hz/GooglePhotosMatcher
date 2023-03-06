@@ -85,6 +85,12 @@ def delete_dir(path):
         shutil.rmtree(path)
 
 
+def copy_files_only(source, dest):
+    for entity in os.scandir(source):
+        if entity.is_file():
+            shutil.move(entity, dest / entity.name)
+
+
 def set_file_times(filepath, timestamp):
     f = filedate.File(filepath)
     f.set(created=timestamp, modified=timestamp)

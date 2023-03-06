@@ -1,4 +1,4 @@
-from helpers import search_media, create_folders, set_exif, set_file_times, copy_folder, delete_dir
+from helpers import search_media, create_folders, set_exif, set_file_times, copy_folder, delete_dir, copy_files_only
 import json
 from PIL import Image, ImageOps
 import os
@@ -16,6 +16,7 @@ def merge_folder(browser_path: str, window, edited_word):
     output_folder = original_folder.parent / (original_folder.name + " - merged")
     matched_output_folder = output_folder / "matched"
     edited_output_folder = output_folder / "edited_raw"
+    unmatched_output_folder = output_folder / "unmatched"
 
     error_counter = 0
     success_counter = 0
@@ -24,7 +25,7 @@ def merge_folder(browser_path: str, window, edited_word):
     try:
         # clear output folder
         delete_dir(output_folder)
-        create_folders(output_folder, matched_output_folder, edited_output_folder)
+        create_folders(output_folder, matched_output_folder, unmatched_output_folder, edited_output_folder)
         # copy all files to the output folder to leave the original intact
         copy_folder(original_folder, output_folder)
 
@@ -107,6 +108,9 @@ def merge_folder(browser_path: str, window, edited_word):
 
     if error_counter == 1:
         error_message = " error"
+
+    # move any files left to the unmerged folder
+    copy_files_only(output_folder, unmatched_output_folder)
 
     window['-PROGRESS_BAR-'].update(100, visible=True)
     window['-PROGRESS_LABEL-'].update(
