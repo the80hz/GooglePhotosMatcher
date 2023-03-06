@@ -38,6 +38,10 @@ def merge_folder(browser_path: str, window, edited_word):
     # Get JSON files
     json_files = list(filter(lambda x: x.is_file() and x.name.endswith(".json"), files_in_dir))
     for entry in json_files:
+        if entry.name == "metadata.json":
+            # skip album metadata files
+            continue
+
         with open(entry, encoding="utf8") as f:  # Load JSON into a var
             data = json.load(f)
 

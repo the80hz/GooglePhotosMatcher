@@ -55,10 +55,14 @@ def search_media(path, title, media_moved, non_edited, edited_word):
 
 # Supress incompatible characters
 def fix_title(title):
-    return str(title).replace("%", "").replace("<", "").replace(">", "").replace("=", "").replace(":", ""). \
-        replace("?", "").replace("¿", "").replace("*", "").replace("#", "").replace("&", "").replace("{", ""). \
-        replace("}", "").replace("\\", "").replace("@", "").replace("!", "").replace("¿", "").replace("+", ""). \
-        replace("|", "").replace("\"", "").replace("\'", "")
+    replace_chars = ["%", "<", ">", "=", ":", "?", "¿", "*", "#", "&", "{", "}", "\\", "@", "!", "¿", "+", "|", "\"",
+                     "'"]
+    replaced = title
+    for c in replace_chars:
+        replaced = replaced.replace(c, "_")
+    if replaced != title:
+        print(f"funky image title name found: {title}")
+    return replaced
 
 
 # Recursive function to search name if its repeated
