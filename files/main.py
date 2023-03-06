@@ -1,6 +1,6 @@
 from helpers import search_media, create_folders, set_exif, set_file_times, copy_folder, delete_dir
 import json
-from PIL import Image
+from PIL import Image, ImageOps
 import os
 from typing import List
 from os import DirEntry
@@ -32,73 +32,77 @@ def merge_folder(browser_path: str, window, edited_word):
         # copy all files to the output folder to leave the original intact
         copy_folder(original_folder, output_folder)
 
-        obj: List[DirEntry] = list(os.scandir(output_folder))  # Convert iterator into a list to sort it
-        obj.sort(key=lambda s: len(s.name))  # Sort by length to avoid name(1).jpg be processed before name.jpg
+        files_in_dir: List[DirEntry] = list(os.scandir(output_folder))  # Convert iterator into a list to sort it
+        files_in_dir.sort(key=lambda s: len(s.name))  # Sort by length to avoid name(1).jpg be processed before name.jpg
     except FileNotFoundError:
         window['-PROGRESS_LABEL-'].update("Choose a valid directory", visible=True, text_color='red')
         return
 
-    for entry in obj:
-        if entry.is_file() and entry.name.endswith(".json"):  # Check if file is a JSON
-            with open(entry, encoding="utf8") as f:  # Load JSON into a var
-                data = json.load(f)
+    # Get JSON files
+    json_files = list(filter(lambda x: x.is_file() and x.name.endswith(".json"), files_in_dir))
+    for entry in json_files:
+        with open(entry, encoding="utf8") as f:  # Load JSON into a var
+            data = json.load(f)
 
-            progress = round(obj.index(entry) / len(obj) * 100, 2)
-            window['-PROGRESS_LABEL-'].update(str(progress) + "%", visible=True)
-            window['-PROGRESS_BAR-'].update(progress, visible=True)
+        progress = round(json_files.index(entry) / len(json_files) * 100, 2)
+        window['-PROGRESS_LABEL-'].update(str(progress) + "%", visible=True)
+        window['-PROGRESS_BAR-'].update(progress, visible=True)
 
-            # SEARCH MEDIA ASSOCIATED TO JSON
-            original_title = data['title']  # Store metadata into vars
+        # SEARCH MEDIA ASSOCIATED TO JSON
+        original_title = data['title']  # Store metadata into vars
+
+        try:
+            title = search_media(output_folder, original_title, media_moved, edited_output_folder, edited_word)
+
+        except Exception as e:
+            print(f"Error on search_media() with file {original_title}: {e}")
+            error_counter += 1
+            continue
+
+        filepath = output_folder / title
+        if title == "None":
+            print(original_title + " not found")
+            error_counter += 1
+            continue
+
+        # METADATA EDITION
+        time_stamp = int(data['photoTakenTime']['timestamp'])  # Get creation time
+        print(filepath)
+
+        if title.rsplit('.', 1)[1].casefold() in piexif_codecs:  # If EXIF is supported
+            try:
+                im = Image.open(filepath)
+                # if images have a rotation specified, rewrite it rotated appropriately
+                # https://github.com/python-pillow/Pillow/issues/4703
+                im = ImageOps.exif_transpose(im)
+                rgb_im = im.convert('RGB')
+                jpg_filepath = filepath.with_suffix(".jpg")
+                os.replace(filepath, jpg_filepath)
+                rgb_im.save(jpg_filepath)
+
+            except ValueError as e:
+                print("Error converting to JPG in " + title)
+                error_counter += 1
+                continue
 
             try:
-                title = search_media(output_folder, original_title, media_moved, edited_output_folder, edited_word)
+                set_exif(str(filepath), data['geoData']['latitude'], data['geoData']['longitude'],
+                         data['geoData']['altitude'], time_stamp)
 
-            except Exception as e:
-                print(f"Error on search_media() with file {original_title}: {e}")
+            except Exception as e:  # Error handler
+                print(f"Error setting EXIF data for {filepath}")
+                print(str(e))
                 error_counter += 1
                 continue
 
-            filepath = output_folder / title
-            if title == "None":
-                print(original_title + " not found")
-                error_counter += 1
-                continue
+        # creation and modification time
+        set_file_times(filepath, time_stamp)
 
-            # METADATA EDITION
-            time_stamp = int(data['photoTakenTime']['timestamp'])  # Get creation time
-            print(filepath)
-
-            if title.rsplit('.', 1)[1].casefold() in piexif_codecs:  # If EXIF is supported
-                try:
-                    im = Image.open(filepath)
-                    rgb_im = im.convert('RGB')
-                    os.replace(filepath, filepath.rsplit('.', 1)[0] + ".jpg")
-                    filepath = filepath.rsplit('.', 1)[0] + ".jpg"
-                    rgb_im.save(filepath)
-
-                except ValueError as e:
-                    print("Error converting to JPG in " + title)
-                    error_counter += 1
-                    continue
-
-                try:
-                    set_exif(filepath, data['geoData']['latitude'], data['geoData']['longitude'],
-                             data['geoData']['altitude'], time_stamp)
-
-                except Exception as e:  # Error handler
-                    print("Inexistent EXIF data for " + filepath)
-                    print(str(e))
-                    error_counter += 1
-                    continue
-
-            set_file_times(filepath, time_stamp)  # Windows creation and modification time
-
-            # MOVE FILE AND DELETE JSON
-
-            os.replace(filepath, matched_output_folder / title)
-            os.remove(output_folder / entry.name)
-            media_moved.append(title)
-            success_counter += 1
+        # MOVE FILE AND DELETE JSON
+        os.replace(filepath, matched_output_folder / title)
+        os.remove(output_folder / entry.name)
+        media_moved.append(title)
+        success_counter += 1
 
     success_message = " successes"
     error_message = " errors"

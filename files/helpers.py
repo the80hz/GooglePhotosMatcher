@@ -118,7 +118,7 @@ def change_to_rational(number):
     return f.numerator, f.denominator
 
 
-def set_exif(filepath, lat, lng, altitude, timestamp):
+def set_exif(filepath: str, lat, lng, altitude, timestamp):
     exif_dict = piexif.load(filepath)
 
     date_time = datetime.fromtimestamp(timestamp).strftime("%Y:%m:%d %H:%M:%S")  # Create date object
