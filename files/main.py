@@ -2,12 +2,14 @@ from auxFunctions import search_media, create_folders, set_exif, set_file_times
 import json
 from PIL import Image
 import os
+from typing import List
+from os import DirEntry
 
 
 # TODO don't make destructive
 # TODO fix image rotations
 
-def merge_folder(browser_path, window, edited_word):
+def merge_folder(browser_path: str, window, edited_word):
     piexif_codecs = [k.casefold() for k in ['TIF', 'TIFF', 'JPEG', 'JPG']]
 
     media_moved = []  # array with names of all the media already matched
@@ -20,10 +22,10 @@ def merge_folder(browser_path, window, edited_word):
     print(edited_word)
 
     try:
-        obj = list(os.scandir(path))  # Convert iterator into a list to sort it
+        obj: List[DirEntry] = list(os.scandir(path))  # Convert iterator into a list to sort it
         obj.sort(key=lambda s: len(s.name))  # Sort by length to avoid name(1).jpg be processed before name.jpg
         create_folders(fixed_media_path, non_edited_media_path)
-    except Exception as e:
+    except FileNotFoundError:
         window['-PROGRESS_LABEL-'].update("Choose a valid directory", visible=True, text_color='red')
         return
 
@@ -43,7 +45,7 @@ def merge_folder(browser_path, window, edited_word):
             try:
                 title = search_media(path, original_title, media_moved, non_edited_media_path, edited_word)
 
-            except Exception as e:
+            except Exception:
                 print("Error on searchMedia() with file " + original_title)
                 error_counter += 1
                 continue
