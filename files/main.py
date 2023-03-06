@@ -18,7 +18,6 @@ def merge_folder(browser_path: str, window, edited_word):
     # create output directories for merged and unmerged files
     output_folder = original_folder.parent / (original_folder.name + " - merged")
     matched_output_folder = output_folder / "matched"
-    unmatched_output_folder = output_folder / "unmatched"
     edited_output_folder = output_folder / "edited_raw"
 
     error_counter = 0
@@ -28,7 +27,7 @@ def merge_folder(browser_path: str, window, edited_word):
     try:
         # clear output folder
         delete_dir(output_folder)
-        create_folders(output_folder, matched_output_folder, unmatched_output_folder, edited_output_folder)
+        create_folders(output_folder, matched_output_folder, edited_output_folder)
         # copy all files to the output folder to leave the original intact
         copy_folder(original_folder, output_folder)
 
@@ -76,9 +75,7 @@ def merge_folder(browser_path: str, window, edited_word):
                 # https://github.com/python-pillow/Pillow/issues/4703
                 im = ImageOps.exif_transpose(im)
                 rgb_im = im.convert('RGB')
-                jpg_filepath = filepath.with_suffix(".jpg")
-                os.replace(filepath, jpg_filepath)
-                rgb_im.save(jpg_filepath)
+                rgb_im.save(filepath)
 
             except ValueError as e:
                 print("Error converting to JPG in " + title)
