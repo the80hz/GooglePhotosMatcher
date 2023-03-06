@@ -6,81 +6,80 @@ import filedate
 
 
 # Function to search media associated to the JSON
-def searchMedia(path, title, mediaMoved, nonEdited, editedWord):
-    title = fixTitle(title)
-    realTitle = str(title.rsplit('.', 1)[0] + "-" + editedWord + "." + title.rsplit('.', 1)[1])
-    filepath = os.path.join(path, realTitle)  # First we check if exists an edited version of the image
+def search_media(path, title, media_moved, non_edited, edited_word):
+    title = fix_title(title)
+    real_title = str(title.rsplit('.', 1)[0] + "-" + edited_word + "." + title.rsplit('.', 1)[1])
+    filepath = os.path.join(path, real_title)  # First we check if exists an edited version of the image
     if not os.path.exists(filepath):
-        realTitle = str(title.rsplit('.', 1)[0] + "(1)." + title.rsplit('.', 1)[1])
-        filepath = os.path.join(path, realTitle)  # First we check if exists an edited version of the image
+        real_title = str(title.rsplit('.', 1)[0] + "(1)." + title.rsplit('.', 1)[1])
+        filepath = os.path.join(path, real_title)  # First we check if exists an edited version of the image
         if not os.path.exists(filepath) or os.path.exists(os.path.join(path, title) + "(1).json"):
-            realTitle = title
-            filepath = os.path.join(path, realTitle)  # If not, check if exists the path with the same name
+            real_title = title
+            filepath = os.path.join(path, real_title)  # If not, check if exists the path with the same name
             if not os.path.exists(filepath):
-                realTitle = checkIfSameName(title, title, mediaMoved,
-                                            1)  # If not, check if exists the path to the same name adding (1), (2), etc
-                filepath = str(os.path.join(path, realTitle))
+                # If not, check if exists the path to the same name adding (1), (2), etc
+                real_title = check_if_same_name(title, title, media_moved, 1)
+                filepath = str(os.path.join(path, real_title))
                 if not os.path.exists(filepath):
                     title = (title.rsplit('.', 1)[0])[:47] + "." + title.rsplit('.', 1)[
                         1]  # Sometimes title is limited to 47 characters, check also that
-                    realTitle = str(title.rsplit('.', 1)[0] + "-editado." + title.rsplit('.', 1)[1])
-                    filepath = os.path.join(path, realTitle)
+                    real_title = str(title.rsplit('.', 1)[0] + "-" + edited_word + "." + title.rsplit('.', 1)[1])
+                    filepath = os.path.join(path, real_title)
                     if not os.path.exists(filepath):
-                        realTitle = str(title.rsplit('.', 1)[0] + "(1)." + title.rsplit('.', 1)[1])
-                        filepath = os.path.join(path, realTitle)
+                        real_title = str(title.rsplit('.', 1)[0] + "(1)." + title.rsplit('.', 1)[1])
+                        filepath = os.path.join(path, real_title)
                         if not os.path.exists(filepath):
-                            realTitle = title
-                            filepath = os.path.join(path, realTitle)
+                            real_title = title
+                            filepath = os.path.join(path, real_title)
                             if not os.path.exists(filepath):
-                                realTitle = checkIfSameName(title, title, mediaMoved, 1)
-                                filepath = os.path.join(path, realTitle)
+                                real_title = check_if_same_name(title, title, media_moved, 1)
+                                filepath = os.path.join(path, real_title)
                                 if not os.path.exists(filepath):  # If path not found, return null
-                                    realTitle = None
+                                    real_title = None
                         else:
                             filepath = os.path.join(path, title)  # Move original media to another folder
-                            os.replace(filepath, os.path.join(nonEdited, title))
+                            os.replace(filepath, os.path.join(non_edited, title))
                     else:
                         filepath = os.path.join(path, title)  # Move original media to another folder
-                        os.replace(filepath, os.path.join(nonEdited, title))
+                        os.replace(filepath, os.path.join(non_edited, title))
         else:
             filepath = os.path.join(path, title)  # Move original media to another folder
-            os.replace(filepath, os.path.join(nonEdited, title))
+            os.replace(filepath, os.path.join(non_edited, title))
     else:
         filepath = os.path.join(path, title)  # Move original media to another folder
-        os.replace(filepath, os.path.join(nonEdited, title))
+        os.replace(filepath, os.path.join(non_edited, title))
 
-    return str(realTitle)
+    return str(real_title)
 
 
 # Supress incompatible characters
-def fixTitle(title):
-    return str(title).replace("%", "").replace("<", "").replace(">", "").replace("=", "").replace(":", "").replace("?",
-                                                                                                                   "").replace(
-        "¿", "").replace("*", "").replace("#", "").replace("&", "").replace("{", "").replace("}", "").replace("\\",
-                                                                                                              "").replace(
-        "@", "").replace("!", "").replace("¿", "").replace("+", "").replace("|", "").replace("\"", "").replace("\'", "")
+def fix_title(title):
+    return str(title).replace("%", "").replace("<", "").replace(">", "").replace("=", "").replace(":", ""). \
+        replace("?", "").replace("¿", "").replace("*", "").replace("#", "").replace("&", "").replace("{", ""). \
+        replace("}", "").replace("\\", "").replace("@", "").replace("!", "").replace("¿", "").replace("+", ""). \
+        replace("|", "").replace("\"", "").replace("\'", "")
 
 
 # Recursive function to search name if its repeated
-def checkIfSameName(title, titleFixed, mediaMoved, recursionTime):
-    if titleFixed in mediaMoved:
-        titleFixed = title.rsplit('.', 1)[0] + "(" + str(recursionTime) + ")" + "." + title.rsplit('.', 1)[1]
-        return checkIfSameName(title, titleFixed, mediaMoved, recursionTime + 1)
+def check_if_same_name(title, title_fixed, media_moved, recursion_time):
+    if title_fixed in media_moved:
+        title_fixed = title.rsplit('.', 1)[0] + "(" + str(recursion_time) + ")" + "." + title.rsplit('.', 1)[1]
+        return check_if_same_name(title, title_fixed, media_moved, recursion_time + 1)
     else:
-        return titleFixed
+        return title_fixed
 
 
-def createFolders(fixed, nonEdited):
+def create_folders(fixed, non_edited):
     if not os.path.exists(fixed):
         os.mkdir(fixed)
 
-    if not os.path.exists(nonEdited):
-        os.mkdir(nonEdited)
+    if not os.path.exists(non_edited):
+        os.mkdir(non_edited)
 
 
-def setFileTimes(filepath, timeStamp):
+def set_file_times(filepath, timestamp):
     f = filedate.File(filepath)
-    f.set(created=timeStamp, modified=timeStamp)
+    f.set(created=timestamp, modified=timestamp)
 
 
 def to_deg(value, loc):
@@ -99,7 +98,7 @@ def to_deg(value, loc):
     t1 = (abs_value - deg) * 60
     min = int(t1)
     sec = round((t1 - min) * 60, 5)
-    return (deg, min, sec, loc_value)
+    return deg, min, sec, loc_value
 
 
 def change_to_rational(number):
@@ -108,16 +107,16 @@ def change_to_rational(number):
     return: tuple like (1, 2), (numerator, denominator)
     """
     f = Fraction(str(number))
-    return (f.numerator, f.denominator)
+    return f.numerator, f.denominator
 
 
-def set_EXIF(filepath, lat, lng, altitude, timeStamp):
+def set_exif(filepath, lat, lng, altitude, timestamp):
     exif_dict = piexif.load(filepath)
 
-    dateTime = datetime.fromtimestamp(timeStamp).strftime("%Y:%m:%d %H:%M:%S")  # Create date object
-    exif_dict['0th'][piexif.ImageIFD.DateTime] = dateTime
-    exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = dateTime
-    exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized] = dateTime
+    date_time = datetime.fromtimestamp(timestamp).strftime("%Y:%m:%d %H:%M:%S")  # Create date object
+    exif_dict['0th'][piexif.ImageIFD.DateTime] = date_time
+    exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = date_time
+    exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized] = date_time
 
     exif_bytes = piexif.dump(exif_dict)
     piexif.insert(exif_bytes, filepath)

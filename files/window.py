@@ -1,4 +1,4 @@
-from main import *
+from main import merge_folder
 import PySimpleGUI as sg
 
 if __name__ == '__main__':
@@ -23,12 +23,15 @@ if __name__ == '__main__':
         if event == sg.WIN_CLOSED or event == "Exit":
             break
         elif event == "Match":
-            mainProcess(values["-IN2-"], window, values['-INPUT_TEXT-'])
+            merge_folder(values["-IN2-"], window, values['-INPUT_TEXT-'])
         elif event == "Help":
-            sg.Popup("", "Media edited with the integrated editor of google photos "
-                         "will download both the original image 'Example.jpg' and the edited version 'Example-editado.jpg'.",
-                     "",
-                     "The 'editado' suffix changes depending on the language (in the case of Spain it will be 'editado').",
-                     "",
-                     "If you leave this box blank default spanish suffix will be used to search for edited photos.",
-                     "", title="Information", icon='photos.ico')
+            sg.Popup(
+                "",
+                "Media edited with the integrated editor of google photos will download both the original image "
+                "'Example.jpg' and the edited version 'Example-edited.jpg'.",
+                "",
+                "The 'edited' suffix changes depending on the language (in the case of Spain it will be 'editado').",
+                "",
+                "If you leave this box blank, the 'edited' will be used to search for edited photos.",
+                "", title="Information", icon='photos.ico'
+            )

@@ -1,27 +1,28 @@
-from auxFunctions import *
+from auxFunctions import search_media, create_folders, set_exif, set_file_times
 import json
 from PIL import Image
+import os
 
 
 # TODO don't make destructive
 # TODO fix image rotations
 
-def mainProcess(browserPath, window, editedW):
-    piexifCodecs = [k.casefold() for k in ['TIF', 'TIFF', 'JPEG', 'JPG']]
+def merge_folder(browser_path, window, edited_word):
+    piexif_codecs = [k.casefold() for k in ['TIF', 'TIFF', 'JPEG', 'JPG']]
 
-    mediaMoved = []  # array with names of all the media already matched
-    path = browserPath  # source path
-    fixedMediaPath = os.path.join(path, "MatchedMedia")  # destination path
-    nonEditedMediaPath = os.path.join(path, "EditedRaw")
-    errorCounter = 0
-    successCounter = 0
-    editedWord = editedW or "edited"
-    print(editedWord)
+    media_moved = []  # array with names of all the media already matched
+    path = browser_path  # source path
+    fixed_media_path = os.path.join(path, "MatchedMedia")  # destination path
+    non_edited_media_path = os.path.join(path, "EditedRaw")
+    error_counter = 0
+    success_counter = 0
+    edited_word = edited_word or "edited"
+    print(edited_word)
 
     try:
         obj = list(os.scandir(path))  # Convert iterator into a list to sort it
         obj.sort(key=lambda s: len(s.name))  # Sort by length to avoid name(1).jpg be processed before name.jpg
-        createFolders(fixedMediaPath, nonEditedMediaPath)
+        create_folders(fixed_media_path, non_edited_media_path)
     except Exception as e:
         window['-PROGRESS_LABEL-'].update("Choose a valid directory", visible=True, text_color='red')
         return
@@ -37,27 +38,27 @@ def mainProcess(browserPath, window, editedW):
 
             # SEARCH MEDIA ASSOCIATED TO JSON
 
-            titleOriginal = data['title']  # Store metadata into vars
+            original_title = data['title']  # Store metadata into vars
 
             try:
-                title = searchMedia(path, titleOriginal, mediaMoved, nonEditedMediaPath, editedWord)
+                title = search_media(path, original_title, media_moved, non_edited_media_path, edited_word)
 
             except Exception as e:
-                print("Error on searchMedia() with file " + titleOriginal)
-                errorCounter += 1
+                print("Error on searchMedia() with file " + original_title)
+                error_counter += 1
                 continue
 
             filepath = os.path.join(path, title)
             if title == "None":
-                print(titleOriginal + " not found")
-                errorCounter += 1
+                print(original_title + " not found")
+                error_counter += 1
                 continue
 
             # METADATA EDITION
-            timeStamp = int(data['photoTakenTime']['timestamp'])  # Get creation time
+            time_stamp = int(data['photoTakenTime']['timestamp'])  # Get creation time
             print(filepath)
 
-            if title.rsplit('.', 1)[1].casefold() in piexifCodecs:  # If EXIF is supported
+            if title.rsplit('.', 1)[1].casefold() in piexif_codecs:  # If EXIF is supported
                 try:
                     im = Image.open(filepath)
                     rgb_im = im.convert('RGB')
@@ -67,39 +68,39 @@ def mainProcess(browserPath, window, editedW):
 
                 except ValueError as e:
                     print("Error converting to JPG in " + title)
-                    errorCounter += 1
+                    error_counter += 1
                     continue
 
                 try:
-                    set_EXIF(filepath, data['geoData']['latitude'], data['geoData']['longitude'],
-                             data['geoData']['altitude'], timeStamp)
+                    set_exif(filepath, data['geoData']['latitude'], data['geoData']['longitude'],
+                             data['geoData']['altitude'], time_stamp)
 
                 except Exception as e:  # Error handler
                     print("Inexistent EXIF data for " + filepath)
                     print(str(e))
-                    errorCounter += 1
+                    error_counter += 1
                     continue
 
-            setFileTimes(filepath, timeStamp)  # Windows creation and modification time
+            set_file_times(filepath, time_stamp)  # Windows creation and modification time
 
             # MOVE FILE AND DELETE JSON
 
-            os.replace(filepath, os.path.join(fixedMediaPath, title))
+            os.replace(filepath, os.path.join(fixed_media_path, title))
             os.remove(os.path.join(path, entry.name))
-            mediaMoved.append(title)
-            successCounter += 1
+            media_moved.append(title)
+            success_counter += 1
 
     sucessMessage = " successes"
     errorMessage = " errors"
 
     # UPDATE INTERFACE
-    if successCounter == 1:
+    if success_counter == 1:
         sucessMessage = " success"
 
-    if errorCounter == 1:
+    if error_counter == 1:
         errorMessage = " error"
 
     window['-PROGRESS_BAR-'].update(100, visible=True)
     window['-PROGRESS_LABEL-'].update(
-        "Matching process finished with " + str(successCounter) + sucessMessage + " and " + str(
-            errorCounter) + errorMessage + ".", visible=True, text_color='#c0ffb3')
+        "Matching process finished with " + str(success_counter) + sucessMessage + " and " + str(
+            error_counter) + errorMessage + ".", visible=True, text_color='#c0ffb3')
