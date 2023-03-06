@@ -7,9 +7,6 @@ from os import DirEntry
 from pathlib import Path
 
 
-# TODO don't make destructive
-# TODO fix image rotations
-
 def merge_folder(browser_path: str, window, edited_word):
     piexif_codecs = [k.casefold() for k in ['TIF', 'TIFF', 'JPEG', 'JPG']]
 
