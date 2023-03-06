@@ -1,9 +1,10 @@
-from auxFunctions import search_media, create_folders, set_exif, set_file_times
+from helpers import search_media, create_folders, set_exif, set_file_times, copy_folder, delete_dir
 import json
 from PIL import Image
 import os
 from typing import List
 from os import DirEntry
+from pathlib import Path
 
 
 # TODO don't make destructive
@@ -13,18 +14,26 @@ def merge_folder(browser_path: str, window, edited_word):
     piexif_codecs = [k.casefold() for k in ['TIF', 'TIFF', 'JPEG', 'JPG']]
 
     media_moved = []  # array with names of all the media already matched
-    path = browser_path  # source path
-    fixed_media_path = os.path.join(path, "MatchedMedia")  # destination path
-    non_edited_media_path = os.path.join(path, "EditedRaw")
+    original_folder = Path(browser_path)  # source path
+    # create output directories for merged and unmerged files
+    output_folder = original_folder.parent / (original_folder.name + " - merged")
+    matched_output_folder = output_folder / "matched"
+    unmatched_output_folder = output_folder / "unmatched"
+    edited_output_folder = output_folder / "edited_raw"
+
     error_counter = 0
     success_counter = 0
     edited_word = edited_word or "edited"
-    print(edited_word)
 
     try:
-        obj: List[DirEntry] = list(os.scandir(path))  # Convert iterator into a list to sort it
+        # clear output folder
+        delete_dir(output_folder)
+        create_folders(output_folder, matched_output_folder, unmatched_output_folder, edited_output_folder)
+        # copy all files to the output folder to leave the original intact
+        copy_folder(original_folder, output_folder)
+
+        obj: List[DirEntry] = list(os.scandir(output_folder))  # Convert iterator into a list to sort it
         obj.sort(key=lambda s: len(s.name))  # Sort by length to avoid name(1).jpg be processed before name.jpg
-        create_folders(fixed_media_path, non_edited_media_path)
     except FileNotFoundError:
         window['-PROGRESS_LABEL-'].update("Choose a valid directory", visible=True, text_color='red')
         return
@@ -39,18 +48,17 @@ def merge_folder(browser_path: str, window, edited_word):
             window['-PROGRESS_BAR-'].update(progress, visible=True)
 
             # SEARCH MEDIA ASSOCIATED TO JSON
-
             original_title = data['title']  # Store metadata into vars
 
             try:
-                title = search_media(path, original_title, media_moved, non_edited_media_path, edited_word)
+                title = search_media(output_folder, original_title, media_moved, edited_output_folder, edited_word)
 
-            except Exception:
-                print("Error on searchMedia() with file " + original_title)
+            except Exception as e:
+                print(f"Error on search_media() with file {original_title}: {e}")
                 error_counter += 1
                 continue
 
-            filepath = os.path.join(path, title)
+            filepath = output_folder / title
             if title == "None":
                 print(original_title + " not found")
                 error_counter += 1
@@ -87,22 +95,22 @@ def merge_folder(browser_path: str, window, edited_word):
 
             # MOVE FILE AND DELETE JSON
 
-            os.replace(filepath, os.path.join(fixed_media_path, title))
-            os.remove(os.path.join(path, entry.name))
+            os.replace(filepath, matched_output_folder / title)
+            os.remove(output_folder / entry.name)
             media_moved.append(title)
             success_counter += 1
 
-    sucessMessage = " successes"
-    errorMessage = " errors"
+    success_message = " successes"
+    error_message = " errors"
 
     # UPDATE INTERFACE
     if success_counter == 1:
-        sucessMessage = " success"
+        success_message = " success"
 
     if error_counter == 1:
-        errorMessage = " error"
+        error_message = " error"
 
     window['-PROGRESS_BAR-'].update(100, visible=True)
     window['-PROGRESS_LABEL-'].update(
-        "Matching process finished with " + str(success_counter) + sucessMessage + " and " + str(
-            error_counter) + errorMessage + ".", visible=True, text_color='#c0ffb3')
+        "Matching process finished with " + str(success_counter) + success_message + " and " + str(
+            error_counter) + error_message + ".", visible=True, text_color='#c0ffb3')

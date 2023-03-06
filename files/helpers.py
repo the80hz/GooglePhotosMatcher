@@ -1,4 +1,5 @@
 import os
+import shutil
 from datetime import datetime
 import piexif
 from fractions import Fraction
@@ -69,12 +70,19 @@ def check_if_same_name(title, title_fixed, media_moved, recursion_time):
         return title_fixed
 
 
-def create_folders(fixed, non_edited):
-    if not os.path.exists(fixed):
-        os.mkdir(fixed)
+def create_folders(*args):
+    for f in args:
+        if not os.path.exists(f):
+            os.mkdir(f)
 
-    if not os.path.exists(non_edited):
-        os.mkdir(non_edited)
+
+def copy_folder(source, dest):
+    shutil.copytree(source, dest, dirs_exist_ok=True)
+
+
+def delete_dir(path):
+    if os.path.exists(path):
+        shutil.rmtree(path)
 
 
 def set_file_times(filepath, timestamp):
