@@ -5,7 +5,7 @@ import piexif
 from fractions import Fraction
 import filedate
 from pymediainfo import MediaInfo
-import hsaudiotag3k
+from mutagen.mp4 import MP4, MP4Tags
 import logging
 
 # Setup logging
@@ -159,18 +159,16 @@ def set_exif(filepath: str, lat, lng, altitude, timestamp):
 
 def set_video_metadata(filepath: str, lat, lng, timestamp):
     try:
-        media_info = MediaInfo.parse(filepath)
-        tags = hsaudiotag3k.MP4(filepath)
-
+        tags = MP4(filepath)
+        
         # Update GPS information (latitude and longitude)
-        tags.tags['©xyz'] = f"+{lat}/{lng}/"
-        tags.save()
-
+        tags["©xyz"] = [f"+{lat}/{lng}/"]
+        
         # Update creation date/time
         date_time = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%dT%H:%M:%S")
-        tags.tags['©day'] = date_time
+        tags["©day"] = [date_time]
+        
         tags.save()
-
         logging.info(f"Set video metadata for {filepath}")
     except Exception as e:
         logging.error(f"Error setting video metadata for {filepath}: {e}")
