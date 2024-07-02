@@ -5,7 +5,10 @@ import os
 from typing import List
 from os import DirEntry
 from pathlib import Path
+import logging
 
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def merge_folder(browser_path: str, window, edited_word):
     piexif_codecs = [k.casefold() for k in ['TIF', 'TIFF', 'JPEG', 'JPG']]
@@ -33,6 +36,7 @@ def merge_folder(browser_path: str, window, edited_word):
         files_in_dir.sort(key=lambda s: len(s.name))  # Sort by length to avoid name(1).jpg be processed before name.jpg
     except FileNotFoundError:
         window['-PROGRESS_LABEL-'].update("Choose a valid directory", visible=True, text_color='red')
+        logging.error("Invalid directory selected.")
         return
 
     # Get JSON files
@@ -56,41 +60,37 @@ def merge_folder(browser_path: str, window, edited_word):
             title = search_media(output_folder, original_title, media_moved, edited_output_folder, edited_word)
 
         except Exception as e:
-            print(f"Error on search_media() with file {original_title}: {e}")
+            logging.error(f"Error on search_media() with file {original_title}: {e}")
             error_counter += 1
             continue
 
         filepath = output_folder / title
         if title == "None":
-            print(original_title + " not found")
+            logging.warning(f"{original_title} not found")
             error_counter += 1
             continue
 
         # METADATA EDITION
         time_stamp = int(data['photoTakenTime']['timestamp'])  # Get creation time
-        print(filepath)
+        logging.info(f"Processing file: {filepath}")
 
         if title.rsplit('.', 1)[1].casefold() in piexif_codecs:  # If EXIF is supported
             try:
                 im = Image.open(filepath)
-                # if images have a rotation specified, rewrite it rotated appropriately
-                # https://github.com/python-pillow/Pillow/issues/4703
-                im = ImageOps.exif_transpose(im)
+                im = ImageOps.exif_transpose(im)  # Correct image orientation based on EXIF
                 rgb_im = im.convert('RGB')
                 rgb_im.save(filepath)
 
             except ValueError as e:
-                print("Error converting to JPG in " + title)
+                logging.error(f"Error converting to JPG in {title}: {e}")
                 error_counter += 1
                 continue
 
             try:
-                set_exif(str(filepath), data['geoData']['latitude'], data['geoData']['longitude'],
-                         data['geoData']['altitude'], time_stamp)
+                set_exif(str(filepath), data['geoData']['latitude'], data['geoData']['longitude'], data['geoData']['altitude'], time_stamp)
 
             except Exception as e:  # Error handler
-                print(f"Error setting EXIF data for {filepath}")
-                print(str(e))
+                logging.error(f"Error setting EXIF data for {filepath}: {e}")
                 error_counter += 1
                 continue
 
@@ -98,8 +98,14 @@ def merge_folder(browser_path: str, window, edited_word):
         set_file_times(filepath, time_stamp)
 
         # MOVE FILE AND DELETE JSON
-        os.replace(filepath, matched_output_folder / title)
-        os.remove(output_folder / entry.name)
+        try:
+            os.replace(filepath, matched_output_folder / title)
+            os.remove(output_folder / entry.name)
+        except Exception as e:
+            logging.error(f"Error moving file {filepath}: {e}")
+            error_counter += 1
+            continue
+
         media_moved.append(title)
         success_counter += 1
 
@@ -120,3 +126,4 @@ def merge_folder(browser_path: str, window, edited_word):
     window['-PROGRESS_LABEL-'].update(
         "Matching process finished with " + str(success_counter) + success_message + " and " + str(
             error_counter) + error_message + ".", visible=True, text_color='#c0ffb3')
+
