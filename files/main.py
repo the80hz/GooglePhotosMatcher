@@ -1,11 +1,14 @@
-from helpers import search_media, create_folders, set_exif, set_file_times, copy_folder, delete_dir, copy_files_only
+from helpers import search_media, create_folders, set_exif, set_file_times, copy_folder, delete_dir, copy_files_only, set_video_metadata
 import json
-from PIL import Image
+from PIL import Image, ImageOps
 import os
 from typing import List
 from os import DirEntry
 from pathlib import Path
+import logging
 
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def merge_folder(browser_path: str, window, edited_word):
     piexif_codecs = [k.casefold() for k in ['TIF', 'TIFF', 'JPEG', 'JPG']]
@@ -31,6 +34,7 @@ def merge_folder(browser_path: str, window, edited_word):
         files_in_dir.sort(key=lambda s: len(s.name))
     except FileNotFoundError:
         window['-PROGRESS_LABEL-'].update("Choose a valid directory", visible=True, text_color='red')
+        logging.error("Choose a valid directory.")
         return
 
     json_files = list(filter(lambda x: x.is_file() and x.name.endswith(".json"), files_in_dir))
@@ -50,18 +54,18 @@ def merge_folder(browser_path: str, window, edited_word):
         try:
             title = search_media(output_folder, original_title, media_moved, edited_output_folder, edited_word)
         except Exception as e:
-            print(f"Error on search_media() with file {original_title}: {e}")
+            logging.error(f"Error on search_media() with file {original_title}: {e}")
             error_counter += 1
             continue
 
         filepath = output_folder / title
         if title == "None":
-            print(original_title + " not found")
+            logging.warning(f"{original_title} not found")
             error_counter += 1
             continue
 
         time_stamp = int(data['photoTakenTime']['timestamp'])
-        print(filepath)
+        logging.info(f"Processing file: {filepath}")
 
         file_extension = title.rsplit('.', 1)[1].casefold()
         if file_extension in piexif_codecs:
@@ -69,16 +73,14 @@ def merge_folder(browser_path: str, window, edited_word):
                 set_exif(str(filepath), data['geoData']['latitude'], data['geoData']['longitude'],
                          data['geoData']['altitude'], time_stamp)
             except Exception as e:
-                print(f"Error setting EXIF data for {filepath}")
-                print(str(e))
+                logging.error(f"Error setting EXIF data for {filepath}: {e}")
                 error_counter += 1
                 continue
         elif file_extension in video_codecs:
             try:
                 set_video_metadata(str(filepath), data['geoData']['latitude'], data['geoData']['longitude'], time_stamp)
             except Exception as e:
-                print(f"Error setting video metadata for {filepath}")
-                print(str(e))
+                logging.error(f"Error setting video metadata for {filepath}: {e}")
                 error_counter += 1
                 continue
 
@@ -104,3 +106,4 @@ def merge_folder(browser_path: str, window, edited_word):
     window['-PROGRESS_LABEL-'].update(
         "Matching process finished with " + str(success_counter) + success_message + " and " + str(
             error_counter) + error_message + ".", visible=True, text_color='#c0ffb3')
+    logging.info(f"Matching process finished with {success_counter} {success_message} and {error_counter} {error_message}.")
