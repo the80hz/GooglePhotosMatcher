@@ -1,4 +1,3 @@
-from helpers import search_media, create_folders, set_exif, set_file_times, copy_folder, delete_dir, copy_files_only, set_video_metadata
 import json
 from PIL import Image, ImageOps
 import os
@@ -6,6 +5,83 @@ from typing import List
 from os import DirEntry
 from pathlib import Path
 import logging
+from .file_operations import create_folders, copy_folder, delete_dir, copy_files_only
+from .photo_metadata import set_exif
+from .video_metadata import set_video_metadata
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def set_file_times(filepath, timestamp):
+    import filedate
+    f = filedate.File(filepath)
+    f.set(created=timestamp, modified=timestamp)
+    logging.info(f"Set file times for {filepath} to {timestamp}")
+
+def search_media(path, title, media_moved, non_edited, edited_word):
+    title = fix_title(title)
+    real_title = str(title.rsplit('.', 1)[0] + "-" + edited_word + "." + title.rsplit('.', 1)[1])
+    filepath = os.path.join(path, real_title)
+
+    if not os.path.exists(filepath):
+        real_title = str(title.rsplit('.', 1)[0] + "(1)." + title.rsplit('.', 1)[1])
+        filepath = os.path.join(path, real_title)
+        if not os.path.exists(filepath) or os.path.exists(os.path.join(path, title) + "(1).json"):
+            real_title = title
+            filepath = os.path.join(path, real_title)
+            if not os.path.exists(filepath):
+                real_title = check_if_same_name(title, title, media_moved, 1)
+                filepath = str(os.path.join(path, real_title))
+                if not os.path.exists(filepath):
+                    title = (title.rsplit('.', 1)[0])[:47] + "." + title.rsplit('.', 1)[1]
+                    real_title = str(title.rsplit('.', 1)[0] + "-" + edited_word + "." + title.rsplit('.', 1)[1])
+                    filepath = os.path.join(path, real_title)
+                    if not os.path.exists(filepath):
+                        real_title = str(title.rsplit('.', 1)[0] + "(1)." + title.rsplit('.', 1)[1])
+                        filepath = os.path.join(path, real_title)
+                        if not os.path.exists(filepath):
+                            real_title = title
+                            filepath = os.path.join(path, real_title)
+                            if not os.path.exists(filepath):
+                                real_title = check_if_same_name(title, title, media_moved, 1)
+                                filepath = os.path.join(path, real_title)
+                                if not os.path.exists(filepath):
+                                    real_title = None
+                        else:
+                            move_file_to_folder(filepath, os.path.join(non_edited, title))
+                    else:
+                        move_file_to_folder(filepath, os.path.join(non_edited, title))
+        else:
+            move_file_to_folder(filepath, os.path.join(non_edited, title))
+    else:
+        move_file_to_folder(filepath, os.path.join(non_edited, title))
+
+    return str(real_title)
+
+def move_file_to_folder(source, dest):
+    try:
+        if not os.path.exists(os.path.dirname(dest)):
+            os.makedirs(os.path.dirname(dest))
+        os.replace(source, dest)
+        logging.info(f"Moved file from {source} to {dest}")
+    except Exception as e:
+        logging.error(f"Error moving file {source} to {dest}: {e}")
+
+def fix_title(title):
+    replace_chars = ["%", "<", ">", "=", ":", "?", "¿", "*", "#", "&", "{", "}", "\\", "@", "!", "¿", "+", "|", "\"", "'"]
+    replaced = title
+    for c in replace_chars:
+        replaced = replaced.replace(c, "_")
+    if replaced != title:
+        logging.info(f"Funky image title name found: {title}")
+    return replaced
+
+def check_if_same_name(title, title_fixed, media_moved, recursion_time):
+    if title_fixed in media_moved:
+        title_fixed = title.rsplit('.', 1)[0] + "(" + str(recursion_time) + ")" + "." + title.rsplit('.', 1)[1]
+        return check_if_same_name(title, title_fixed, media_moved, recursion_time + 1)
+    else:
+        return title_fixed
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -76,7 +152,7 @@ def merge_folder(browser_path: str, window, edited_word):
         if file_extension in piexif_codecs:
             try:
                 set_exif(str(filepath), data['geoData']['latitude'], data['geoData']['longitude'],
-                            data['geoData']['altitude'], time_stamp)
+                         data['geoData']['altitude'], time_stamp)
             except Exception as e:
                 logging.error(f"Error setting EXIF data for {filepath}: {e}")
                 error_counter += 1
