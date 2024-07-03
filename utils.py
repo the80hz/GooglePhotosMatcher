@@ -64,8 +64,13 @@ def merge_folder(browser_path: str, window, edited_word):
             error_counter += 1
             continue
 
-        time_stamp = int(data['photoTakenTime']['timestamp'])
         logging.info(f"Processing file: {filepath}")
+        if not os.path.exists(filepath):
+            logging.error(f"File does not exist: {filepath}")
+            error_counter += 1
+            continue
+
+        time_stamp = int(data['photoTakenTime']['timestamp'])
 
         file_extension = title.rsplit('.', 1)[1].casefold()
         if file_extension in piexif_codecs:

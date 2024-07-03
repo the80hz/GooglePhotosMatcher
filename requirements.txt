@@ -4,3 +4,4 @@ PySimpleGUI
 Pillow
 mutagen
 pymediainfo
+ffmpeg-python

@@ -7,6 +7,8 @@ import filedate
 from pymediainfo import MediaInfo
 from mutagen.mp4 import MP4, MP4Tags
 import logging
+import ffmpeg
+from pathlib import Path
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -159,16 +161,37 @@ def set_exif(filepath: str, lat, lng, altitude, timestamp):
 
 def set_video_metadata(filepath: str, lat, lng, timestamp):
     try:
-        tags = MP4(filepath)
+        # Verify the file path
+        if not os.path.exists(filepath):
+            logging.error(f"File not found: {filepath}")
+            return
         
-        # Update GPS information (latitude and longitude)
-        tags["©xyz"] = [f"+{lat}/{lng}/"]
+        # Ensure the filepath is properly formatted for ffmpeg
+        filepath = str(Path(filepath).resolve())
         
-        # Update creation date/time
+        # Format the location string according to ISO 6709
+        location = f"{lat:+.6f}{lng:+.6f}/"
+        
+        # Format the date and time
         date_time = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%dT%H:%M:%S")
-        tags["©day"] = [date_time]
-        
-        tags.save()
+
+        # Use ffmpeg to set the metadata
+        (
+            ffmpeg
+            .input(filepath)
+            .output(
+                filepath,
+                **{
+                    'metadata:gps_location': location,
+                    'metadata:com.apple.quicktime.location.ISO6709': location,
+                    'metadata:creation_time': date_time
+                },
+                vcodec='copy',  # Video codec copy to avoid re-encoding
+                acodec='copy'   # Audio codec copy to avoid re-encoding
+            )
+            .overwrite_output()
+            .run()
+        )
         logging.info(f"Set video metadata for {filepath}")
     except Exception as e:
         logging.error(f"Error setting video metadata for {filepath}: {e}")
