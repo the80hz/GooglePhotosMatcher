@@ -1,4 +1,4 @@
-from main import merge_folder
+from utils import merge_folder
 import PySimpleGUI as sg
 
 if __name__ == '__main__':

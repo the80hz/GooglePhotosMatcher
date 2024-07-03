@@ -71,7 +71,7 @@ def merge_folder(browser_path: str, window, edited_word):
         if file_extension in piexif_codecs:
             try:
                 set_exif(str(filepath), data['geoData']['latitude'], data['geoData']['longitude'],
-                         data['geoData']['altitude'], time_stamp)
+                            data['geoData']['altitude'], time_stamp)
             except Exception as e:
                 logging.error(f"Error setting EXIF data for {filepath}: {e}")
                 error_counter += 1
