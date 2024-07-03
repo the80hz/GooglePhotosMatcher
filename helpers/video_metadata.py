@@ -2,16 +2,21 @@ import subprocess
 import logging
 from datetime import datetime
 import os
-from pathlib import Path
 import shutil
+from pathlib import Path
 
-def set_video_metadata(filepath: str, lat, lng, timestamp):
+def set_video_metadata(filepath: str, lat: float, lng: float, timestamp: int):
     try:
+        # Verify the file path
+        if not os.path.exists(filepath):
+            logging.error(f"File not found: {filepath}")
+            return
+
         # Format the location string according to ISO 6709
-        location = f"{lat:+.6f}{lng:+.6f}/"
+        location = f"{lat:+8.4f}{lng:+09.4f}+140.000/"
 
         # Format the date and time
-        date_time = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%dT%H:%M:%S")
+        date_time = datetime.utcfromtimestamp(timestamp).strftime("%Y-%m-%dT%H:%M:%S+0000")
 
         # Create a temporary file path
         temp_filepath = filepath + ".temp.mp4"
@@ -20,9 +25,10 @@ def set_video_metadata(filepath: str, lat, lng, timestamp):
         command = [
             'ffmpeg',
             '-i', filepath,
-            '-metadata', f'gps_location={location}',
+            '-movflags', 'use_metadata_tags',
+            '-map_metadata', '0',
             '-metadata', f'com.apple.quicktime.location.ISO6709={location}',
-            '-metadata', f'creation_time={date_time}',
+            '-metadata', f'com.apple.quicktime.creationdate={date_time}',
             '-codec', 'copy',
             temp_filepath
         ]
@@ -36,3 +42,5 @@ def set_video_metadata(filepath: str, lat, lng, timestamp):
         logging.info(f"Set video metadata for {filepath}")
     except subprocess.CalledProcessError as e:
         logging.error(f"Error setting video metadata for {filepath}: {e}")
+    except Exception as e:
+        logging.error(f"Unexpected error setting video metadata for {filepath}: {e}")
