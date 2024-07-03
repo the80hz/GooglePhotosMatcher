@@ -2,4 +2,5 @@ filedate
 piexif
 PySimpleGUI
 Pillow
-hsaudiotag3k
+mutagen
+pymediainfo

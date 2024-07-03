@@ -4,16 +4,16 @@ import PySimpleGUI as sg
 if __name__ == '__main__':
     sg.theme("DarkTeal2")
     layout = [[sg.T("")],
-              [sg.Text('Enter suffix used for edited photos (optional):')],
-              [sg.InputText(key='-INPUT_TEXT-'), sg.ReadFormButton('Help')],
-              [sg.T("")],
-              [sg.Text("Choose a folder: ")],
-              [sg.Input(key="-IN2-", change_submits=True), sg.FolderBrowse(key="-IN-")],
-              [sg.T("")],
-              [sg.Button("Match")],
-              [sg.T("")],
-              [sg.ProgressBar(100, visible=False, orientation='h', border_width=4, key='-PROGRESS_BAR-')],
-              [sg.T("", key='-PROGRESS_LABEL-')]]
+                [sg.Text('Enter suffix used for edited photos (optional):')],
+                [sg.InputText(key='-INPUT_TEXT-'), sg.ReadFormButton('Help')],
+                [sg.T("")],
+                [sg.Text("Choose a folder: ")],
+                [sg.Input(key="-IN2-", change_submits=True), sg.FolderBrowse(key="-IN-")],
+                [sg.T("")],
+                [sg.Button("Match")],
+                [sg.T("")],
+                [sg.ProgressBar(100, visible=False, orientation='h', border_width=4, key='-PROGRESS_BAR-')],
+                [sg.T("", key='-PROGRESS_LABEL-')]]
 
     window = sg.Window('Google Photos Matcher', layout, icon='photos.ico')
 
