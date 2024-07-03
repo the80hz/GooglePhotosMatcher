@@ -83,9 +83,6 @@ def check_if_same_name(title, title_fixed, media_moved, recursion_time):
     else:
         return title_fixed
 
-# Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 def merge_folder(browser_path: str, window, edited_word):
     piexif_codecs = [k.casefold() for k in ['TIF', 'TIFF', 'JPEG', 'JPG']]
     video_codecs = [k.casefold() for k in ['MP4', 'MOV']]
