@@ -13,7 +13,7 @@ def set_video_metadata(filepath: str, lat: float, lng: float, timestamp: int):
             return
 
         # Format the location string according to ISO 6709
-        location = f"{lat:+8.4f}{lng:+09.4f}+140.000/"
+        location = f"{lat:+8.4f}{lng:+09.4f}"
 
         # Format the date and time
         date_time = datetime.utcfromtimestamp(timestamp).strftime("%Y-%m-%dT%H:%M:%S+0000")
@@ -27,6 +27,7 @@ def set_video_metadata(filepath: str, lat: float, lng: float, timestamp: int):
             '-i', filepath,
             '-movflags', 'use_metadata_tags',
             '-map_metadata', '0',
+            '-metadata', f'Writing library=Apple QuickTime',
             '-metadata', f'com.apple.quicktime.location.ISO6709={location}',
             '-metadata', f'com.apple.quicktime.creationdate={date_time}',
             '-codec', 'copy',
