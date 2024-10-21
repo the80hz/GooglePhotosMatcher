@@ -27,9 +27,7 @@ def set_video_metadata(filepath: str, lat: float, lng: float, timestamp: int):
             '-i', filepath,
             '-movflags', 'use_metadata_tags',
             '-map_metadata', '0',
-            '-metadata', f'Writing library=Apple QuickTime',
-            '-metadata', f'com.apple.quicktime.location.ISO6709={location}',
-            '-metadata', f'com.apple.quicktime.creationdate={date_time}',
+            '-metadata', f'Performer=ReplayKitRecording',
             '-codec', 'copy',
             temp_filepath
         ]

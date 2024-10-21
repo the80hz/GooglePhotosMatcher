@@ -1,0 +1,4 @@
+brew install pipx
+pipx install makelive
+makelive *.jpg *.MOV    # создание live photo
+

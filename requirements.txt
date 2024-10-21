@@ -1,7 +1,14 @@
 filedate
 piexif
+pyexiv2
 PySimpleGUI
 Pillow
 mutagen
 pymediainfo
 ffmpeg-python
+pyobjc-core>=9.2
+pyobjc-framework-Contacts>=9.2
+pyobjc-framework-CoreLocation>=9.2
+pyobjc-framework-Quartz>=9.2
+pyobjc-framework-UniformTypeIdentifiers>=9.2
+wurlitzer>=3.0.3
